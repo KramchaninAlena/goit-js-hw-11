@@ -1,74 +1,78 @@
-import axios from "axios";
+import Notiflix from "notiflix";
+import { PixabayApi } from "./PixabayApi";
+import 'notiflix/src/notiflix.css'
+import { createMarkup } from "./createMarkup";
+import SimpleLightbox from "simplelightbox";
+import "simplelightbox/dist/simple-lightbox.min.css";
+
 
 const searchForm = document.querySelector('.search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
 
-let currentPage = 1;
-let searchQuery = null;
-
-// const API_KEY = '38631130-27e1bc4ae57544a30c421ce1d';
-// const BASE_URL = 'https://pixabay.com/api';
+const pixabayApi = new PixabayApi();
+let lightbox = new SimpleLightbox(".gallery a", {
+  captionDelay: 250,
+  
+});
 
 searchForm.addEventListener('submit', handleSearchFormSubmit);
 loadMoreBtn.addEventListener('click', handleLoadMoreBtn);
-// loadMoreBtn.classList.add('is-hidden')
+loadMoreBtn.classList.add('is-hidden');
 
- function handleSearchFormSubmit(evt) {
+ async function handleSearchFormSubmit (evt) {
     evt.preventDefault();
-    searchQuery = evt.target.firstElementChild.value.trim();
-    searchForm.reset()
+    searchQuery = evt.currentTarget.elements.searchQuery.value.trim();
     
-    fetchImages(searchQuery).then(({data}) => gallery.innerHTML = createMarkup(data.hits));
-    loadMoreBtn.classList.remove('is-hidden')
-};
+    searchForm.reset();
+    pixabayApi.searchQuery = searchQuery;
+    pixabayApi.currentPage = 1;
 
-function handleLoadMoreBtn() {
-    currentPage += 1;
-    fetchImages(searchQuery, currentPage).then(({data}) => gallery.insertAdjacentHTML('beforeend', createMarkup(data.hits)));
-}
+    if(!searchQuery){
+        Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.');
+        return;
+    }
+    try {
+      const arrGallery = await pixabayApi.fetchGallery();
+                
+      if(!arrGallery.hits.length) {
+        loadMoreBtn.classList.add('is-hidden');
+        Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.');
+        return
+      };
+        Notiflix.Notify.success(`Hooray! We found ${arrGallery.totalHits} images.`);
+      
+        gallery.innerHTML = createMarkup(arrGallery.hits)
+        lightbox.refresh()
 
-async function fetchImages (searchQuery, page = 1) {
-  try {
-    const API_KEY = '38631130-27e1bc4ae57544a30c421ce1d';
-    const BASE_URL = 'https://pixabay.com/api';
-        
-    const response = await axios.get(`${BASE_URL}/?`, {
-        params:{
-            key: API_KEY,
-            q: `${searchQuery}`,
-            image_type: 'photo',
-            orientation: 'horizontal',
-            safesearch: true,
-            per_page: 40,
-            page: `${page}`
-        }
-    
-});
-    console.log(response);
-    return response;
+        pixabayApi.totalImages()
+    if(arrGallery.hits.length < pixabayApi.totalImages()){
+      loadMoreBtn.classList.add('is-hidden');
+      return
+    }
+      loadMoreBtn.classList.remove('is-hidden');
   }catch (error) {
     console.log(error);
-}
+  }
 };
 
-// function createMarkup(arr){
-// return arr.map(({ webformatURL, tags, likes, views, comments, downloads}) => `<div class="photo-card">
-// <img src="${webformatURL}" alt="${tags}" loading="lazy" />
-// <div class="info">
-//   <p class="info-item">
-//     <b>Likes: ${likes}</b>
-//   </p>
-//   <p class="info-item">
-//     <b>Views: ${views}b>
-//   </p>
-//   <p class="info-item">
-//     <b>Comments: ${comments}</b>
-//   </p>
-//   <p class="info-item">
-//     <b>Downloads: ${downloads}</b>
-//   </p>
-// </div>
-// </div>`
-// ).join('')
-// }
+ async function handleLoadMoreBtn() {
+  try {
+    pixabayApi.currentPage += 1;
+    const arrGallery = await pixabayApi.fetchGallery()
+    gallery.insertAdjacentHTML('beforeend', createMarkup(arrGallery.hits))
+    lightbox.refresh()
+
+    pixabayApi.totalImages()
+    if(pixabayApi.totalImages() >= arrGallery.totalHits){
+      loadMoreBtn.classList.add('is-hidden');
+      Notiflix.Notify.failure("We're sorry, but you've reached the end of search results.");
+      return
+    }
+  }catch (error) {
+    console.log(error);
+  }
+};
+
+
+ 
