@@ -4,6 +4,7 @@ import 'notiflix/src/notiflix.css'
 import { createMarkup } from "./createMarkup";
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
+import { scrolling } from "./scrolling";
 
 
 const searchForm = document.querySelector('.search-form');
@@ -22,10 +23,10 @@ loadMoreBtn.classList.add('is-hidden');
 
  async function handleSearchFormSubmit (evt) {
     evt.preventDefault();
-    searchQuery = evt.currentTarget.elements.searchQuery.value.trim();
+    const searchQuery = evt.currentTarget.elements.searchQuery.value.trim();
     
     searchForm.reset();
-    pixabayApi.searchQuery = searchQuery;
+    pixabayApi.query = searchQuery;
     pixabayApi.currentPage = 1;
 
     if(!searchQuery){
@@ -62,6 +63,7 @@ loadMoreBtn.classList.add('is-hidden');
     const arrGallery = await pixabayApi.fetchGallery()
     gallery.insertAdjacentHTML('beforeend', createMarkup(arrGallery.hits))
     lightbox.refresh()
+    scrolling()
 
     pixabayApi.totalImages()
     if(pixabayApi.totalImages() >= arrGallery.totalHits){
@@ -75,4 +77,3 @@ loadMoreBtn.classList.add('is-hidden');
 };
 
 
- 

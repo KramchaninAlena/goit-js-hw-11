@@ -1,21 +1,21 @@
 import axios from "axios";
+import Notiflix from "notiflix";
+import 'notiflix/src/notiflix.css'
 
 export class PixabayApi {
     API_KEY = '38631130-27e1bc4ae57544a30c421ce1d';
     BASE_URL = 'https://pixabay.com/api';
 
     currentPage = 1;
-    searchQuery = null;
+    query = null;
     per_page = 40;
-
-    // searchParams = new URLSearchParams()
-
+    
     async fetchGallery() {
         try {
             const response = await axios.get(`${this.BASE_URL}/?`, {
                 params:{
                     key: this.API_KEY,
-                    q: this.searchQuery,
+                    q: this.query,
                     image_type: 'photo',
                     orientation: 'horizontal',
                     safesearch: true,
@@ -28,7 +28,8 @@ export class PixabayApi {
         console.log(dataGallery);
         return dataGallery;
         }catch (error) {
-            console.log(error);
+            console.warn(error);
+            Notiflix.Notify.failure("Network Error");
         }
     };
 
